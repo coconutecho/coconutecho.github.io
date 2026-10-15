@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en" data-theme="auto">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Partial Bayesian Networks for Chest X-Rays - Wenyi Xu</title>
+  <meta name="description" content="A controlled comparison of deterministic, partial-Bayesian, and fully Bayesian ResNet-50 models for pneumonia detection on chest X-rays: the partial-Bayesian model reached 94.7% test accuracy and a 0.959 F1 score while keeping uncertainty estimates." />
+  <link rel="icon" type="image/svg+xml" href="../images/logo.svg" />
+  <link rel="stylesheet" href="../styles.css" />
+  <script src="../scripts/page-header.js"></script>
+  <script src="../scripts/project-hero.js"></script>
+  <script src="../scripts/theme.js"></script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="page-head" data-page-header></header>
+
+    <main>
+      <section class="project-hero">
+        <div class="project-hero__content">
+          <h2 class="project-hero__title">Partial Bayesian Networks for Chest X-Ray Classification</h2>
+          <div class="project-hero__meta">
+            <div class="project-hero__meta-item">Role: Co-author &amp; corresponding author</div>
+            <div class="project-hero__meta-item">With: Yuanchen Wang (Harvard Medical School; USC)</div>
+            <div class="project-hero__meta-item">Tools: PyTorch, torchbnn, scikit-optimize, Captum, OpenCV</div>
+            <div class="project-hero__meta-item">Duration: Jun 2025 &ndash; Apr 2026</div>
+          </div>
+        </div>
+        <figure class="project-hero__media"><img src="../images/bnn-architecture.png" alt="Diagram of the ResNet-50 architecture used in the study: a chest X-ray input passes through convolutional stages (block A) and then average pooling and a fully connected softmax layer (block B)." /></figure>
+      </section>
+
+      <section class="project-body">
+        <p class="meta">Manuscript &middot; Wang, Y. &amp; Xu, W. <em>Partial Bayesian Approach for Chest X-Ray Image Classification: Balancing Accuracy and Uncertainty.</em></p>
+
+        <section class="project-block">
+          <div class="two-col">
+            <div>
+              <h3>Why</h3>
+              <p class="meta">In medical imaging, a model that says how sure it is can matter as much as one that is right. Bayesian neural networks treat weights as distributions rather than fixed values, so they return a spread of predictions, flag low-confidence cases, and regularize well when data are limited.</p>
+              <p class="meta">Making a whole deep network Bayesian is expensive, though: memory grows, training becomes unstable, and fully Bayesian models often fail to beat ordinary ones. Few studies have compared, under controlled conditions, how much of a network is worth making Bayesian.</p>
+            </div>
+            <div>
+              <h3>What</h3>
+              <p class="meta">We trained three ResNet-50 variants that differ only in how much of the network is Bayesian, and compared them on pneumonia detection from chest X-rays.</p>
+              <ul>
+                <li><strong>Non-Bayesian:</strong> every layer deterministic (blocks A and B in the diagram above).</li>
+                <li><strong>Partial-Bayesian:</strong> only the final linear classification layer (block B) is Bayesian.</li>
+                <li><strong>Fully Bayesian:</strong> every convolutional and linear layer is probabilistic; batch normalization and pooling stay deterministic.</li>
+              </ul>
+              <p class="pill-list"><span class="pill">ResNet-50</span><span class="pill">Bayesian Neural Networks</span><span class="pill">Variational Inference</span><span class="pill">Transfer Learning</span><span class="pill">CLAHE</span><span class="pill">Bayesian Optimization</span><span class="pill">Integrated Gradients</span><span class="pill">Uncertainty Quantification</span></p>
+            </div>
+          </div>
+        </section>
+
+        <section class="project-block">
+          <h3>How</h3>
+          <div class="two-col">
+            <div>
+              <h4>Data</h4>
+              <p class="meta">A public pediatric chest X-ray dataset (Kermany, 2018) with two classes, normal and pneumonia: 5,200 training images (1,333 normal, 3,867 pneumonia), 32 validation images, and 624 test images. Pneumonia outnumbers normal almost three to one in training, so weighted random sampling kept every mini-batch roughly balanced.</p>
+              <h4>Preprocessing</h4>
+              <p class="meta">Standard ResNet-50 preprocessing (resize to 232, center-crop to 224, ImageNet normalization), with Gaussian blur, random perspective, and random affine augmentation on the training set only. Each model was trained twice, on the original images and on images enhanced with contrast-limited adaptive histogram equalization (CLAHE).</p>
+            </div>
+            <div>
+              <h4>Models</h4>
+              <p class="meta">All variants start from ImageNet-pretrained ResNet-50 weights. Bayesian layers (torchbnn) model each weight as a Gaussian with prior mean 0 and standard deviation 0.1, a prior chosen by inspecting the pretrained weight distributions. Pretrained weights initialize the posterior means. At evaluation, Bayesian models run many stochastic forward passes and average them.</p>
+              <h4>Training and tuning</h4>
+              <p class="meta">Loss = (1 &minus; p) &middot; NLL + p &middot; KL. The KL weight p, batch size, optimizer, and learning rate were chosen per model by Gaussian-process Bayesian optimization (scikit-optimize): 25 iterations, each scored by mean validation F1 across three random 90/10 splits. Final models trained for 50 epochs.</p>
+              <h4>Explainability</h4>
+              <p class="meta">Integrated Gradients (Captum), from a black-image baseline, show which image regions drive each prediction: is the model looking at the lungs or at background cues?</p>
+            </div>
+          </div>
+          <figure class="figure figure--narrow">
+            <img src="../images/bnn-clahe.jpg" alt="A pediatric chest X-ray after CLAHE preprocessing, with sharpened local contrast across the ribs and lung fields." width="1192" height="952" loading="lazy" />
+            <figcaption class="figure-caption"><p class="meta">A chest X-ray after CLAHE, which equalizes contrast within local tiles and clips the amplification so noise is not blown up. Image: Kermany, D. (2018), <a href="https://data.mendeley.com/datasets/rscbjbr9sj/2" target="_blank" rel="noopener">Labeled Optical Coherence Tomography (OCT) and Chest X-Ray Images for Classification</a>, Mendeley Data.</p></figcaption>
+          </figure>
+        </section>
+
+        <section class="project-block">
+          <h3>Results</h3>
+          <div class="table-scroll">
+            <table class="data-table">
+              <thead>
+                <tr><th scope="col">Model</th><th scope="col">Input</th><th scope="col">Test accuracy</th><th scope="col">Test F1</th><th scope="col">Training time (s)</th></tr>
+              </thead>
+              <tbody>
+                <tr><th scope="row">Non-Bayesian</th><td>Original</td><td>0.9279</td><td>0.9442</td><td>3,294</td></tr>
+                <tr><th scope="row">Non-Bayesian</th><td>CLAHE</td><td>0.9375</td><td>0.9517</td><td>3,825</td></tr>
+                <tr><th scope="row">Partial-Bayesian</th><td>Original</td><td><strong>0.9473</strong></td><td><strong>0.9588</strong></td><td>3,783</td></tr>
+                <tr><th scope="row">Partial-Bayesian</th><td>CLAHE</td><td>0.9314</td><td>0.9470</td><td>4,125</td></tr>
+                <tr><th scope="row">Fully Bayesian</th><td>Original</td><td>0.7000</td><td>0.7563</td><td>5,038</td></tr>
+                <tr><th scope="row">Fully Bayesian</th><td>CLAHE</td><td>0.7101</td><td>0.7842</td><td>5,089</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="table-note">624 held-out test images. Best values in bold.</p>
+          <ul>
+            <li><strong>A Bayesian output layer was enough.</strong> The partial-Bayesian model scored highest on both accuracy and F1, ahead of the deterministic baseline, and trained only about 15% slower.</li>
+            <li><strong>Full Bayesianization hurt.</strong> With 23M+ parameters turned into distributions and the same 50-epoch budget, the fully Bayesian model stayed near 70% accuracy. Its Monte Carlo predictions were still consistent, and narrower when correct, which points to slow convergence rather than a useless model.</li>
+            <li><strong>Uncertainty came for free.</strong> On a normal X-ray, 1,000 forward passes of the partial-Bayesian model gave a mean normal-class probability of 93.6% (SD 4.2) with a 90% interval of [85.8%, 95.3%]: a prediction with its own error bars.</li>
+            <li><strong>CLAHE helped the deterministic model, not the Bayesian one.</strong> Contrast enhancement lifted the non-Bayesian model but slightly lowered partial-Bayesian accuracy. It did, however, shrink the partial model&rsquo;s prediction variance, a trade-off between raw accuracy and stable predictions.</li>
+            <li><strong>The strong models looked at the lungs.</strong> Integrated Gradients maps for the best configurations concentrated on consolidated lung regions; the fully Bayesian model failed to localize them.</li>
+          </ul>
+        </section>
+
+        <section class="project-block">
+          <h3>Limitations and next steps</h3>
+          <ul>
+            <li>One task and one dataset. Whether partial-Bayesian gains carry over to other modalities and diseases is still open.</li>
+            <li>A fixed epoch budget may have under-trained the fully Bayesian model; longer or adaptive schedules are the obvious next test.</li>
+            <li>Uncertainty was judged from predictive distributions and intervals. Formal calibration metrics, such as expected calibration error and coverage, would make the reliability case stronger.</li>
+            <li>Bayesian layers placed earlier or mid-network, and cheaper variational approximations, are natural extensions.</li>
+          </ul>
+        </section>
+      </section>
+    </main>
+
+    <footer>
+      <p>
+        &copy; 2026 Wenyi Xu.
+        <a href="../index.html">&larr; Back to home</a>
+      </p>
+    </footer>
+  </div>
+</body>
+</html>
